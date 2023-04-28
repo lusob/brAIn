@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>brAIn</title>
+    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .body {
+            background-color: #333;
+        }
+
+        .chat-body {
+            width: 400px;
+            margin: 50px auto;
+        }
+
+        .card-body {
+            background-color: #333;
+            color: #fff;
+            border-radius: 10px;
+        }
+
+        .server-message {
+            background-color: #444;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 10px;
+        }
+
+        .client-message {
+            background-color: #555;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 10px;
+        }
+
+        .form-inline {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .form-control {
+            width: 80%;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 10px;
+            margin-right: 10px;
+        }
+
+        #send {
+            background-color: #4C4CFF;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+        }
+
+        .form-message {
+            margin-top: 10px;
+        }
+
+        a {
+            color: #ffffff;
+        }
+    </style>
+    <script>
+        // Input box always has focus even after a reload browser
+        window.addEventListener('load', function () {
+            document.getElementById('messageText').focus();
+        });
+        // Get the current URL without the protocol
+        const currentUrl = window.location.href;
+        const urlWithoutProtocol = currentUrl.replace(/^https?:\/\//, '');
+
+        // Choose URL scheme to use "ws" or "wss" depending on current protocol
+        const wsScheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+
+        var ws = new WebSocket(wsScheme + urlWithoutProtocol + "chat");
+        // Receive message from server word by word. Display the words as they are received.
+        ws.onmessage = function (event) {
+            var messages = document.getElementById('messages');
+            var data = JSON.parse(event.data);
+            if (data.sender === "bot") {
+                if (data.type === "start") {
+                    var header = document.getElementById('header');
+                    header.innerHTML = "Computing answer...";
+                    var div = document.createElement('div');
+                    div.className = 'server-message';
+                    var p = document.createElement('p');
+                    p.innerHTML = "<strong>" + "brAIn: " + "</strong>";
+                    div.appendChild(p);
+                    messages.appendChild(div);
+                } else if (data.type === "stream") {
+                    var header = document.getElementById('header');
+                    header.innerHTML = "brAIn is typing...";
+                    var p = messages.lastChild.lastChild;
+                    if (data.message === "\n") {
+                        p.innerHTML += "<br>";
+                    } else {
+                        p.innerHTML += data.message;
+                    }
+                } else if (data.type === "sources") {
+                    var header = document.getElementById('header');
+                    header.innerHTML = "brAIn is typing...";
+                    var p = messages.lastChild.lastChild;
+                    p.innerHTML += "<br><br>📚 <strong>Sources:</strong><br>" + data.message;
+                } else if (data.type === "info") {
+                    var header = document.getElementById('header');
+                    header.innerHTML = data.message;
+                } else if (data.type === "end") {
+                    var header = document.getElementById('header');
+                    header.innerHTML = "Ask a question";
+                    var button = document.getElementById('send');
+                    button.innerHTML = "Send";
+                    button.disabled = false;
+                } else if (data.type === "error") {
+                    var header = document.getElementById('header');
+                    header.innerHTML = "Ask a question";
+                    var button = document.getElementById('send');
+                    button.innerHTML = "Send";
+                    button.disabled = false;
+                    var p = messages.lastChild.lastChild;
+                    p.innerHTML += data.message;
+                }
+            } else {
+                var div = document.createElement('div');
+                div.className = 'client-message';
+                var p = document.createElement('p');
+                p.innerHTML = "<strong>" + "You: " + "</strong>";
+                p.innerHTML += data.message;
+                div.appendChild(p);
+                messages.appendChild(div);
+            }
+            // Scroll to the bottom of the chat
+            messages.scrollTop = messages.scrollHeight;
+        };
+        // Send message to server
+        function sendMessage(event) {
+            event.preventDefault();
+            var message = document.getElementById('messageText').value;
+            if (message === "") {
+                return;
+            }
+            ws.send(message);
+            document.getElementById('messageText').value = "";
+
+            // Turn the button into a loading button
+            var button = document.getElementById('send');
+            button.innerHTML = "Loading...";
+            button.disabled = true;
+            // Set focus to the input box
+            document.getElementById('messageText').focus();
+        }
+    </script>
+</head>
+
+<body class="body" data-theme="dark">
+    <div class="chat-body card">
+        <div class="card-body p-5">
+            <div style="display: flex; align-items: center;">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAACXBIWXMAAAsTAAALEwEAmpwYAAAExUlEQVR4nO2aa4xdUxTHf6Z0lDKjoRqqo61HEWKUpF5BfBMfvBrxTD8R02SENCFEqGeRBpF+UpFGESSEMkioBDFEiUbbSHpRShBG0TFV1V5Zyf8ky7n7nLPPufdOh8w/WZlzz157nbXOWWvtvdYeGMc4/hPYE5gFzAAmFvDuD8wWdTNGcDDwEPA7UBcNAyuBI8WzN3CJ7n3t+BL6HngBuAyYtDuMOBXY4hT6EdgE7NDvEeAJ4KeU4n8Dm4Fa6gXUgR+Aa4CO0TLiFGCrHr4CONyNHQgsAXY6BT8CbgbmyA097Mv1AR87/gHggHYo3umuTZG1euBdOXMudIrFYr5czeZ8COxLC2BBeTfwlQTbGx4EntPvVyNklDXEMB1Yr3mP0ySmureeBOSvKX8292qHIYYeYEgv7ySawMtS4DOg190/XV9iXaScWEOmiDwWae4jNJGN6so2B2XwHFIgo1sGJ4a8AnQF+KZorC5a5YL8MN2zpHJLIEkU4mEJuInqWOlS8IiunwzwrdDYFpfKLWV7z0iy39tlg/8dTTymCUOSeDoamKlru5fGkMZ6tCuw659TPL1uIX0p5uH7AYuBbZo0KeAGtpLHoCYZtrhdq+uNAb5NGlsEXK9ru0dgrflN41fmPdjexudi/At4M8ePBzL83aMvsBW5LsC3MMDXVyDTXsiEEIMF0acu2Kbl+HHi788CczMoweXA6yLbR2XhCmeEXWdhL+A78Z2dJ2h9agVP+/EMbTHqBVQF9ci5S8Vnfxvwogb7I/y936XENSmKVSb0FeuRc893GSwz4I5t0t9jlWnma/aI79vQ4LAGJ+cISPz9LeCqAgVjDVkToCJMdjVPA/7QYFEmKkJZQ6pgH83dHhoc1KC99bFuyDmaa0tFAy7VoC04NwLzclJrHiUKtopvrugM4CIVa0m1eUeWpY9GpNWxQu+qDxAMoLWunt6YEYh5Qdos1TNkf6L6/k/HM6Q9XAPucaXloW3y7SLUI2QfD7whvmdCDF9q8OQWPKwq6pGyZ7puSwO2a7CzRQ9LY1qg+qsqe6L4rOXUgF802KqH+SrxtYzqr6rsbvGZzg1IAv3cJsrWUNp8XvwjGdVfFUOOE9+GvNRrrc+qZWteupyTU/2VNWSB+EynBvSqLh6WxVXK1lD6TDqR/QVVYhlDBoqqxAddju5XX6tM2RpSZGHkrjnWkNOAXVrdM5sQHWp/Jg1om1BmG5+lyNXA6pwqMbZtNAv4pqAU/heOci7RVaJsrZqai+JvKnCby6xPA3vECl+nSWZULKoakhd/Ha7E2KWOY6kmXZL7raxstyF58XeCfn8RsesI4nYJWD4KhuTF3336bb22SjhCu2DbcZ6Y0cjrrdg8CCEUf9PlYjukT2Usden4BqW+83RekXQiQ9QKdKpLUtYrMjdnywtW7KGC5sHsnG5+FrpcOq7psKklOBN4TFXZavntxfrkW1OdRY95WrjMPZ8CzipImx06+U1OxzaXzJqVsUQP3KYvd4GUt4OgW92a4MkaBg/obDHhna89Xs3xvaf+1ajAmsjLlN9DbrdTX89W5PvdAWce1ZSGgw3qdsPKz3t1IDMoF1wWOPeboFbOYm1DPgDe1z8K3CkX3i0GjGMc/3f8A3qAcBBKnpHHAAAAAElFTkSuQmCC"
+                    alt="IMAGE_ALT" style="margin-right: 10px;">
+                <h4 class="card-title text-center text-xl font-medium" style="margin-bottom: 0;">
+                    br<span style="color: red;">AI</span>n
+                </h4>
+            </div>
+            <p class="card-text text-center text-sm" id="header"> </p>
+            <hr class="border-gray-500 mb-5" style="margin-top: 20px;">
+            <div id="messages" class="overflow-auto" style="max-height: 500px;">
+            </div>
+            <form action="" class="form-inline mt-5" id="chat-form" onsubmit="sendMessage(event)">
+                <input type="text" class="form-control" placeholder="Write your question" id="messageText">
+                <button id="send" type="submit" class="btn btn-primary">Send</button>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>
