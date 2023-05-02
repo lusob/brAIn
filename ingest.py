@@ -29,7 +29,15 @@ def ingest_docs():
         for file in files:
             if file.endswith(".md"):
                 markdown_files.append(os.path.join(root, file))
-    print("Ingesting files:")
+
+
+    vectorstore_path = os.path.join(folder_path, "vectorstore.pkl")
+    if os.path.exists(vectorstore_path):
+        vectorstore_mtime = os.path.getmtime(vectorstore_path) if os.path.exists(vectorstore_path) else 0
+        markdown_files = [file for file in markdown_files if os.path.getmtime(file) > vectorstore_mtime]
+        print(f"Vector store detected, ingesting {len(markdown_files)} new files")
+    else:
+        print(f"Creating new vector store, ingesting {len(markdown_files)} files:")
 
     # Loop through each markdown file, read the contents, and add it as a document to the vector store
     documents = []
@@ -46,19 +54,21 @@ def ingest_docs():
             for document in documents_chunks:
                 documents.append(document)
 
-    embeddings = OpenAIEmbeddings()
-    vectorstore = FAISS.from_documents(documents, embeddings)
+    # Create vector store
+    if documents:
+        embeddings = OpenAIEmbeddings()
+        if os.path.exists(vectorstore_path):
+            # Make an incremental adding just with new documents if a vector store already exists
+            with open(vectorstore_path, "rb") as f:
+                vectorstore = pickle.load(f)
+                tmp_new_docs_vectorstore = FAISS.from_documents(documents, embeddings)
+                vectorstore.merge_from(tmp_new_docs_vectorstore)
+        else:
+            vectorstore = FAISS.from_documents(documents, embeddings)
 
-    # Save vectorstore
-    with open("vectorstore.pkl", "wb") as f:
-        pickle.dump(vectorstore, f)
-
-
-
-if __name__ == "__main__":
-    ingest_docs()
-
-
+        # Save vectorstore
+        with open(vectorstore_path, "wb") as f:
+            pickle.dump(vectorstore, f)
 
 if __name__ == "__main__":
     ingest_docs()

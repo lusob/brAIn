@@ -23,9 +23,10 @@ vectorstore: Optional[VectorStore] = None
 @app.on_event("startup")
 async def startup_event():
     logging.info("loading vectorstore")
-    if not Path("vectorstore.pkl").exists():
+    vectorstore_path = os.path.join(os.environ.get("MARKDOWN_FILES"), "vectorstore.pkl")
+    if not os.path.exists(vectorstore_path):
         raise ValueError("vectorstore.pkl does not exist, please run make ingest first")
-    with open("vectorstore.pkl", "rb") as f:
+    with open(vectorstore_path, "rb") as f:
         global vectorstore
         vectorstore = pickle.load(f)
 
@@ -42,9 +43,6 @@ async def websocket_endpoint(websocket: WebSocket):
     stream_handler = StreamingLLMCallbackHandler(websocket)
     chat_history = []
     qa_chain = get_chain(vectorstore, question_handler, stream_handler)
-    # Use the below line instead of the above line to enable tracing
-    # Ensure `langchain-server` is running
-    # qa_chain = get_chain(vectorstore, question_handler, stream_handler, tracing=True)
 
     while True:
         try:
@@ -84,7 +82,7 @@ async def websocket_endpoint(websocket: WebSocket):
             logging.error(e)
             resp = ChatResponse(
                 sender="bot",
-                message="Perdón, algo salió mal. Intentalo de nuevo.",
+                message="Sorry, something went wrong. Try again.",
                 type="error",
             )
             await websocket.send_json(resp.dict())
