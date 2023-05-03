@@ -9,20 +9,20 @@ from langchain.llms import OpenAI
 from langchain.vectorstores.base import VectorStore
 
 MODEL_NAME = "gpt-3.5-turbo"
-mi_qa_prompt_template = """Usa las siguientes piezas de contexto para responder la pregunta al final.
+mi_qa_prompt_template = """Use the following pieces of context to answer the question at the end:
 {context}
 
-Pregunta: {question}
-Respuesta"""
+Question: {question}
+Answer"""
 QA_PROMPT = PromptTemplate(
     template=mi_qa_prompt_template, input_variables=["context", "question"]
 )
-mi_condense_question_prompt_template = """Dada la siguiente conversación y una pregunta de seguimiento, reformule la pregunta de seguimiento para que sea una pregunta independiente.
+mi_condense_question_prompt_template = """Given the following conversation history and a follow-up question, rephrase the follow-up question to be a stand-alone question.
 
-Historial de conversaciones:
+Conversation history:
 {chat_history}
-Entrada de seguimiento: {question}
-Pregunta independiente:"""
+follow-up question: {question}
+Independent question:"""
 CONDENSE_QUESTION_PROMPT = PromptTemplate.from_template(mi_condense_question_prompt_template)
 
 def get_chain(
