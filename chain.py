@@ -17,11 +17,11 @@ Answer"""
 QA_PROMPT = PromptTemplate(
     template=mi_qa_prompt_template, input_variables=["context", "question"]
 )
-mi_condense_question_prompt_template = """Given the following conversation history and a follow-up question, rephrase the follow-up question to be a stand-alone question.
+mi_condense_question_prompt_template = """Given the following conversation history and a follow-up question, rephrase the follow-up question to be a stand-alone question:
 
 Conversation history:
 {chat_history}
-follow-up question: {question}
+Follow-up question: {question}
 Independent question:"""
 CONDENSE_QUESTION_PROMPT = PromptTemplate.from_template(mi_condense_question_prompt_template)
 
