@@ -1,6 +1,6 @@
 # brAIn
 
-This repo is an implementation of a locally hosted chatbot specifically focused on question answering over my obsidian docs (markdown files).
+This repo is an implementation of a locally hosted chatbot specifically focused on question answering over my docs (markdown files).
 Built with [LangChain](https://github.com/hwchase17/langchain/) and [FastAPI](https://fastapi.tiangolo.com/).
 
 The app leverages LangChain's streaming support and async API to update the page in real time for multiple users (like ChatGPT)
@@ -8,10 +8,10 @@ The app leverages LangChain's streaming support and async API to update the page
 ## ✅ Running locally
 
 1. Install dependencies: `pip install -r requirements.txt`
-2. set `MARKDOWN_FILES` env var with the path to your obsidian vault
+2. set `MARKDOWN_FILES` env var with the path to your source files
 
    ```
-   export MARKDOWN_FILES="<path to yourobsidian vault>
+   export MARKDOWN_FILES="<path to your source files>
    ```
 
 3. Run `make ingest` to ingest markdown docs into the vectorstore (only needs to be done once).

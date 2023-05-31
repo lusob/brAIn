@@ -18,3 +18,7 @@ help:
 	@echo " format: Format the code"
 	@echo " ingest: Run the ingest script"
 	@echo " help: Show this help message"
+
+.PHONY: ingest-openai
+ingest-openai:
+	python3 ingest.py --openai-embeddings

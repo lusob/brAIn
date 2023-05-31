@@ -12,3 +12,4 @@ bs4==0.0.1
 unstructured==0.5.12
 libmagic==1.0
 GitPython==3.1.31
+sentence-transformers==2.2.2

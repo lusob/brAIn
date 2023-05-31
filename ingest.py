@@ -1,35 +1,41 @@
-"""Load html from files, clean up, split, ingest into Weaviate."""
+import argparse
 import glob
 import os
 import pickle
 
 from langchain.document_loaders import UnstructuredMarkdownLoader
-from langchain.embeddings import OpenAIEmbeddings
+from langchain.embeddings import HuggingFaceEmbeddings, OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores.faiss import FAISS
 
 
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--openai-embeddings", action="store_true", help="Use OpenAI embeddings")
+    return parser.parse_args()
+
+def confirm_openai_embeddings():
+    confirmation = input("Using OpenAI embeddings will incur a cost. Do you want to continue? (y/N): ")
+    return confirmation.lower() == "y"
+
 def ingest_docs():
-    # Get the folder path from the MARKDOWN_FILES environment variable
+    args = parse_arguments()
     folder_path = os.environ.get("MARKDOWN_FILES")
 
-    # Check if the folder_path is None or empty
     if not folder_path:
         print("Error: MARKDOWN_FILES environment variable is not set.")
         return
 
-    # Check if the folder_path exists
     if not os.path.exists(folder_path):
         print(f"Error: {folder_path} does not exist.")
         return
-    
-    # Get a list of all the markdown files in the folder and subfolders recursively
+
     markdown_files = []
     for root, dirs, files in os.walk(folder_path):
+        dirs[:] = [d for d in dirs if not d.startswith('.')]
         for file in files:
             if file.endswith(".md"):
                 markdown_files.append(os.path.join(root, file))
-
 
     vectorstore_path = os.path.join(folder_path, "vectorstore.pkl")
     if os.path.exists(vectorstore_path):
@@ -56,7 +62,16 @@ def ingest_docs():
 
     # Create vector store
     if documents:
-        embeddings = OpenAIEmbeddings()
+        if args.openai_embeddings:
+            if confirm_openai_embeddings():
+                print("Generating OpenAI embeddings...")
+                embeddings = OpenAIEmbeddings()
+            else:
+                return
+        else:
+            print("Generating local embeddings...")
+            embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+        vectorstore = FAISS.from_documents(documents, embeddings)
         if os.path.exists(vectorstore_path):
             # Make an incremental adding just with new documents if a vector store already exists
             with open(vectorstore_path, "rb") as f:
