@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from langchain.vectorstores import VectorStore
 
@@ -19,6 +20,9 @@ MAX_HISTORY_LENGTH = 100
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 vectorstore: Optional[VectorStore] = None
+
+# Added sources folder as static files folder to be able to open the source files from the web browser
+app.mount("/sources", StaticFiles(directory=os.environ.get("MARKDOWN_FILES")), name="static")
 
 @app.on_event("startup")
 async def startup_event():
@@ -63,12 +67,15 @@ async def websocket_endpoint(websocket: WebSocket):
             for doc in result['source_documents']:
                 source = doc.metadata['source']
                 source_rel_path = os.path.relpath(source, os.environ.get('MARKDOWN_FILES'))
-                obsidian_url = f"obsidian://open?vault={os.path.basename(os.environ.get('MARKDOWN_FILES'))}&file={source_rel_path.replace(os.path.sep, '%2F')}"
-                source_link = f"<a href=\"{obsidian_url}\">{source_rel_path}</a>"
+                if os.environ.get('IS_OBSIDIAN_VAULT'):
+                    obsidian_url = f"obsidian://open?vault={os.path.basename(os.environ.get('MARKDOWN_FILES'))}&file={source_rel_path.replace(os.path.sep, '%2F')}"
+                    source_link = f"<a href=\"{obsidian_url}\">{source_rel_path}</a>"
+                else:
+                    source_link = f"<a href=\"sources/{source_rel_path}\">{source_rel_path}</a>"
                 source_links[source_link] = None
             resp = ChatResponse(sender="bot", message='<br>'.join(source_links.keys()), type="sources")
             await websocket.send_json(resp.dict())
-            
+
             chat_history.append((question, result["answer"]))
             if len(chat_history) > MAX_HISTORY_LENGTH:
                 chat_history = chat_history[-MAX_HISTORY_LENGTH:]
