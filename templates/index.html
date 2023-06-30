@@ -153,6 +153,20 @@
             // Set focus to the input box
             document.getElementById('messageText').focus();
         }
+
+        // Function to clear the conversation
+        function clearConversation() {
+            var messages = document.getElementById('messages');
+            messages.innerHTML = "";
+        }
+
+        // Event listener for Ctrl+R shortcut
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === 'r') {
+                event.preventDefault();
+                clearConversation();
+            }
+        });
     </script>
 </head>
 
@@ -174,6 +188,10 @@
                 <input type="text" class="form-control" placeholder="Write your question" id="messageText">
                 <button id="send" type="submit" class="btn btn-primary">Send</button>
             </form>
+            <hr class="border-gray-500 mb-5" style="margin-top: 20px;">
+            <div>
+                <button type="button" class="btn btn-secondary" onclick="clearConversation()">Clear Conversation</button>
+            </div>
         </div>
     </div>
 </body>
