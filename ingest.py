@@ -8,15 +8,26 @@ from langchain.embeddings import HuggingFaceEmbeddings, OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores.faiss import FAISS
 
+def _convert_to_uf8(file_path):
+    # Only process Markdown files that are not already encoded in UTF-8
+    with open(file_path, 'rb') as f:
+        data = f.read()
+
+    try:
+        text = data.decode('utf-8')
+    except UnicodeDecodeError:
+        # If the file is not already UTF-8 encoded, decode it using the correct encoding
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(data.decode('iso-8859-1'))
+            print(f"Converted to utf-8: {file_path}")
+    else:
+        # If the file is already encoded in UTF-8, do nothing
+        pass
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("--openai-embeddings", action="store_true", help="Use OpenAI embeddings")
     return parser.parse_args()
-
-def confirm_openai_embeddings():
-    confirmation = input("Using OpenAI embeddings will incur a cost. Do you want to continue? (y/N): ")
-    return confirmation.lower() == "y"
 
 def ingest_docs():
     args = parse_arguments()
@@ -48,26 +59,28 @@ def ingest_docs():
     # Loop through each markdown file, read the contents, and add it as a document to the vector store
     documents = []
     for file_path in markdown_files:
-        with open(file_path, "r") as f:
-            print(file_path)
-            loader = UnstructuredMarkdownLoader(file_path)
-            raw_documents = loader.load()
-            text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=1000,
-                chunk_overlap=200,
-            )
-            documents_chunks = text_splitter.split_documents(raw_documents)
-            for document in documents_chunks:
-                documents.append(document)
+        try:
+            _convert_to_uf8(file_path)
+            with open(file_path, "r") as f:
+                print(file_path)
+                loader = UnstructuredMarkdownLoader(file_path)
+                raw_documents = loader.load()
+                text_splitter = RecursiveCharacterTextSplitter(
+                    chunk_size=1000,
+                    chunk_overlap=200,
+                )
+                documents_chunks = text_splitter.split_documents(raw_documents)
+                for document in documents_chunks:
+                    documents.append(document)
+        except Exception as e:
+            print(f"Error loading file: {file_path}, error: {e}")
+            continue
 
     # Create vector store
     if documents:
         if args.openai_embeddings:
-            if confirm_openai_embeddings():
-                print("Generating OpenAI embeddings...")
-                embeddings = OpenAIEmbeddings()
-            else:
-                return
+            print("Generating OpenAI embeddings...")
+            embeddings = OpenAIEmbeddings()
         else:
             print("Generating local embeddings...")
             embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")

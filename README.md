@@ -14,7 +14,7 @@ The app leverages LangChain's streaming support and async API to update the page
    export MARKDOWN_FILES="<path to your source files>
    ```
 
-3. Run `make ingest` to ingest markdown docs into the vectorstore (only needs to be done once).
+3. Run `make ingest` or `make ingest-openai` to ingest markdown docs into the vectorstore (only needs to be done once).
 
 4. Run the app: `make run` or just `make`
   
@@ -37,7 +37,7 @@ Ingestion has the following steps:
 
 1. Load markdown files with LangChain's [UnstructuredMarkdownLoader](https://python.langchain.com/en/latest/modules/indexes/document_loaders/examples/markdown.html)
 2. Split documents with LangChain's [TextSplitter](https://langchain.readthedocs.io/en/latest/reference/modules/text_splitter.html)
-3. Create a vectorstore of embeddings, using LangChain's [vectorstore wrapper](https://langchain.readthedocs.io/en/latest/reference/modules/vectorstore.html) (with OpenAI's embeddings and FAISS vectorstore) to provide a mapping between documents and their corresponding embeddings, which can be used to retrieve the most relevant documents based on a similarity search using the embeddings.
+3. Create a vectorstore of embeddings, using LangChain's [vectorstore wrapper](https://langchain.readthedocs.io/en/latest/reference/modules/vectorstore.html) (with local embeddings or OpenAI's embeddings and FAISS vectorstore) to provide a mapping between documents and their corresponding embeddings, which can be used to retrieve the most relevant documents based on a similarity search using the embeddings.
 
 Question-Answering has the following steps, all handled by [ConversationalRetrievalChain](https://python.langchain.com/en/latest/modules/chains/index_examples/chat_vector_db.html):
 
